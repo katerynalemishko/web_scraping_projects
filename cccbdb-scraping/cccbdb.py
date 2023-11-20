@@ -79,3 +79,46 @@ def get_calculated_dipole_moment_data(formula, url="https://cccbdb.nist.gov/dipo
     except Exception as e:
   
         print(f"Error processing {formula}: {e}")
+
+
+def get_experimental_ionization_energy(formula, url="https://cccbdb.nist.gov/xp1x.asp?prop=8"):
+  
+    """
+    Fetches experimental ionization energy data for a given chemical formula from a specified URL.
+
+    Args:
+    - formula: Chemical formula
+    - url: URL to fetch the ionization energy data (default: CCCBDB URL)
+
+    Returns:
+    - DataFrame containing ionization energy data
+    """
+    browser = mechanicalsoup.Browser()
+
+    try:
+        login_page = browser.get(url)
+        login_html = login_page.soup
+        
+    
+        form = login_html.select("form")[0]
+        form.select("input")[0]["value"] = formula
+
+        profiles_page = browser.submit(form, login_page.url)
+        l_page = browser.get(profiles_page.url)
+        l_html = l_page.soup
+        
+        try:
+            new_form = l_html.select("form")[1]
+            final_page = browser.submit(new_form, l_page.url)
+            html_table = final_page.soup.findAll('table')[1]
+        except IndexError:
+            html_table = profiles_page.soup.findAll('table')[1]
+
+        list_table = tableDataText(html_table)
+        dftable = pd.DataFrame(list_table)
+
+        return dftable
+
+    except Exception as e:
+       
+        raise RuntimeError(f"Error processing {formula}: {e}")
